@@ -6,31 +6,26 @@ ADD UNIQUE(id_filmu);
 CREATE OR REPLACE FUNCTION dodaj_film(id INTEGER, tyt VARCHAR, 
 	rok INTEGER, c REAL) RETURNS VOID AS
 $$
+DECLARE
+	new_id INTEGER;
 BEGIN
 	EXECUTE 
 		FORMAT('INSERT INTO filmy (id_filmu, tytul, rok_produkcji, cena) 
 				VALUES ($1, $2, $3, $4)') USING id, tyt, rok, c; 
 EXCEPTION 
 	WHEN UNIQUE_VIOLATION THEN
+	SELECT MAX(id_filmu) + 1 INTO new_id FROM filmy;
 	EXECUTE
 		FORMAT('INSERT INTO filmy (id_filmu, tytul, rok_produkcji, cena) 
-				VALUES ((SELECT MAX(id_filmu) + 1 FROM filmy), $1, $2, $3)') USING tyt, rok, c; 
+				VALUES ($1, $2, $3, $4)') USING new_id, tyt, rok, c; 
 END;	
 $$ LANGUAGE PLPGSQL;
 
 
-SELECT dodaj_film(2, 'Film2', 1999, 1.99);
+SELECT dodaj_film(2, 'Film3', 1999, 1.99);
 
 SELECT * FROM filmy;
 
-
-CREATE OR REPLACE FUNCTION insert_into_table(table_name TEXT, id_val INT, name_val TEXT)
-RETURNS VOID AS
-$$
-BEGIN
-    EXECUTE FORMAT('INSERT INTO %I (id, name) VALUES ($1, $2)', table_name) USING id_val, name_val;
-END;
-$$ LANGUAGE plpgsql;
 
 
 /*. Utwórz funkcję o nazwie DODAJ_FILM(id INTEGER, tyt VARCHAR, rok INTEGER, c
