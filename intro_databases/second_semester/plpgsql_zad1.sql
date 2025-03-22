@@ -12,35 +12,18 @@ SELECT tytul, cena,
 	cena_brutto(cena) AS "cena brutto" 
 	FROM filmy;
 
---2. bez aktorów
-DROP FUNCTION opis_filmu;
-
-CREATE FUNCTION opis_filmu(id INTEGER) RETURNS VARCHAR AS $$
+--2. 
+CCREATE FUNCTION opis_filmu(id INTEGER) RETURNS VARCHAR AS $$
 DECLARE
 	opis_film RECORD;
-BEGIN 
-	SELECT * INTO opis_film FROM filmy 
-	NATURAL JOIN obsada
-	NATURAL JOIN aktorzy
-	WHERE id_filmu = id;
-	RETURN 
-	'Film "' || opis_film.tytul ||
-	'" zostal nakrecony w roku ' ||
-	 opis_film.rok_produkcji 
-	 || ' przy udziale akrotorow: ';
-END;
-
-$$ LANGUAGE PLPGSQL;
-
-CREATE FUNCTION opis_filmu(id INTEGER) RETURNS VARCHAR AS $$
-DECLARE
-	opis_film RECORD;
-	filmy_kursor CURSOR FOR SELECT id_filmu, 
-		id_aktora FROM filmy
+	filmy_kursor CURSOR FOR 
+		SELECT 
+		imie, nazwisko FROM filmy
 		NATURAL JOIN obsada
-		NATURAL JOIN aktorzy;
-	id_f filmy.id_filmu%TYPE;
-	id_a aktorzy.id_aktora%TYPE;
+		NATURAL JOIN aktorzy
+		WHERE id_filmu = id;
+	imie_a aktorzy.imie%TYPE;
+	nazwisko_a aktorzy.nazwisko%TYPE;
 	aktorzy VARCHAR;
 BEGIN 
 	aktorzy := '';
@@ -50,9 +33,10 @@ BEGIN
 	WHERE id_filmu = id;
 	OPEN filmy_kursor;
 	LOOP
-	 FETCH filmy_kursor INTO id_f, id_a;
+	 FETCH filmy_kursor INTO imie_a, nazwisko_a;
 	 EXIT WHEN NOT FOUND;
-	 aktorzy := aktorzy || id_a || ', ' ;
+	 aktorzy := aktorzy || imie_a || ' ' || nazwisko_a 
+	 || ', ' ;
 	END LOOP;
 	CLOSE filmy_kursor;
 	
@@ -60,17 +44,12 @@ BEGIN
 	'Film "' || opis_film.tytul ||
 	'" zostal nakrecony w roku ' ||
 	 opis_film.rok_produkcji 
-	 || ' przy udziale akrotorow: ' 
-	 || aktorzy;
+	 || ' przy udziale aktorow: ' 
+	 || LEFT(aktorzy, LENGTH(aktorzy) - 2) || '.';
 	 
 END;
 
 $$ LANGUAGE PLPGSQL;
 
-
+DROP FUNCTION opis_filmu
 SELECT opis_filmu(1);
-
-SELECT * FROM filmy 
-NATURAL JOIN obsada
-NATURAL JOIN aktorzy
-WHERE id_filmu = 1;
