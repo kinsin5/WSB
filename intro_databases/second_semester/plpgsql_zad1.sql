@@ -13,7 +13,7 @@ SELECT tytul, cena,
 	FROM filmy;
 
 --2. 
-CCREATE FUNCTION opis_filmu(id INTEGER) RETURNS VARCHAR AS $$
+CREATE FUNCTION opis_filmu(id INTEGER) RETURNS VARCHAR AS $$
 DECLARE
 	opis_film RECORD;
 	filmy_kursor CURSOR FOR 
