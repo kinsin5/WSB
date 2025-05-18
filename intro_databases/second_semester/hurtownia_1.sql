@@ -14,17 +14,15 @@ CREATE TABLE miejsce_rozmowy(
 
 CREATE TABLE rozmowca(
 	id_rozmowcy SERIAL,
-	wiek INTEGER,
 	przedzial_wieku VARCHAR,
 	PRIMARY KEY(id_rozmowcy)
 );
 CREATE TABLE rozmowa_telefoniczna(
-	id_rozmowy SERIAL,
 	id_miejsca INT REFERENCES miejsce_rozmowy(id_miejsca),
 	id_rozmowcy INTEGER REFERENCES rozmowca(id_rozmowcy),
 	id_pory INTEGER REFERENCES pora_rozmowy(id_pory),
 	czas_rozmowy REAL,
-	PRIMARY KEY(id_rozmowy)
+	PRIMARY KEY(id_rozmowcy, id_miejsca, id_pory)
 );
 
 INSERT INTO miejsce_rozmowy 
@@ -34,8 +32,8 @@ VALUES
 
 INSERT INTO rozmowca 
 VALUES
-(1, 20, '18-20 lat'),
-(2, 50, '45-65 lat');
+(1, '18-20 lat'),
+(2, '45-65 lat');
 
 INSERT INTO pora_rozmowy
 VALUES
@@ -44,31 +42,40 @@ VALUES
 
 INSERT INTO rozmowa_telefoniczna
 VALUES
-(1, 1, 1, 1, 50.4),
-(2, 2, 2, 2, 114.5);
+(1, 1, 1, 50.4),
+(2, 2, 2, 114.5);
 
-SELECT id_rozmowy, miasto, przedzial_wieku, czas_rozmowy FROM rozmowa_telefoniczna
+SELECT miasto, przedzial_wieku, czas_rozmowy FROM rozmowa_telefoniczna
 NATURAL JOIN miejsce_rozmowy
 NATURAL JOIN rozmowca;
 
 /*-napisz funkcję która po wprowadzeniu miasta oraz przedziału wieku (lub godzin) podaje
 średni czas trwania rozmowy tel.*/
 
-CREATE OR REPLACE FUNCTION sr_rozmowy(mia VARCHAR, p_wieku VARCHAR)
-RETURNS REAl AS
+
+
+CREATE OR REPLACE FUNCTION sr_rozmowy (mia VARCHAR, oper VARCHAR)
+RETURNS REAL AS
 $$
 DECLARE
 	sr_rozmowy REAL;
 BEGIN
-	SELECT AVG(czas_rozmowy) INTO sr_rozmowy FROM rozmowa_telefoniczna
-	NATURAL JOIN miejsce_rozmowy NATURAL JOIN rozmowca
-	WHERE miejsce_rozmowy.miasto = mia 
-	AND rozmowca.przedzial_wieku = p_wieku;
-	RETURN sr_rozmowy;
+	IF oper LIKE '%lat' THEN
+		SELECT AVG(czas_rozmowy) INTO sr_rozmowy FROM rozmowa_telefoniczna
+		NATURAL JOIN rozmowca NATURAL JOIN miejsce_rozmowy
+		WHERE miejsce_rozmowy.miasto = mia
+		AND rozmowca.przedzial_wieku = oper;
+		RETURN sr_rozmowy;
+	ELSE
+		SELECT AVG(czas_rozmowy) INTO sr_rozmowy FROM rozmowa_telefoniczna
+		NATURAL JOIN pora_rozmowy NATURAL JOIN miejsce_rozmowy
+		WHERE miejsce_rozmowy.miasto = mia
+		AND pora_rozmowy.przedzial_godziny = oper;
+		RETURN sr_rozmowy;
+	END IF;
 END;
 $$ LANGUAGE PLPGSQL;
 
 
 SELECT sr_rozmowy('Lublin', '18-20 lat');
-
-
+SELECT sr_rozmowy('Lublin', '08:00-18:00');
